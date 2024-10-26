@@ -42,12 +42,11 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    // Define server address
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;  // Accept connections from any IP
+    server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
-
+    
     // Bind the socket
     if (bind(sockfd, (const struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         perror("Bind failed");
@@ -55,28 +54,31 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    printf("Listening for UDP stream on port %d...\n", PORT);
-
-    // Setup signal handling for graceful shutdown
+    printf("Listening for UDP stream on port :: %d...\n", PORT);
     signal(SIGINT, handle_signal);
-
-    start_ffplay(); // Start the ffplay process
+    // start_ffplay();
 
     // Loop to receive data
     while (1) {
-        char buffer[1024] = {0};  // Initialize buffer
+        char buffer[512] = {0};  
         int len = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr *)&client_addr, &addr_len);
-
         if (len < 0) {
             perror("Receive failed");
             continue; // Continue listening on error
         }
 
-        printf("Received %d bytes\n", len);
-        
-        check_ffplay(); // Check if ffplay is still running and restart if necessary
+        // Get client IP and port
+        char client_IP[INET_ADDRSTRLEN]; // Ensure it's large enough
+        inet_ntop(AF_INET, &client_addr.sin_addr, client_IP, sizeof(client_IP));
+        int client_port = ntohs(client_addr.sin_port);
 
-        // Optionally process the received data here
+        printf("Received %d bytes from %s:%d\n", len, client_IP, client_port);
+        printf("Content: %s\n", buffer);
+        
+        // Prepare a formatted string for check_ffplay
+        char client_info[30]; 
+        snprintf(client_info, sizeof(client_info), "rtsp://%s:%d", client_IP, 1945);
+        if(buffer[1]) check_ffplay(client_info);
     }
 
     cleanup(); // Cleanup resources before exiting (though this will never be reached)

@@ -14,3 +14,7 @@ To compile the project, run:
 
 ```bash
 make
+```
+## Requirmnets 
+- ffmpeg 6.x
+

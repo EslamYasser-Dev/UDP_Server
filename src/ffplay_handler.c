@@ -7,29 +7,32 @@
 #include <errno.h>
 #include "config.h"
 
-pid_t ffplay_pid = -1; // To store the ffplay process ID
-
-void start_ffplay() {
-    ffplay_pid = fork(); // Create a child process for ffplay
+pid_t ffplay_pid = -1;
+void start_ffplay(char* url) {
+    ffplay_pid = fork();
     if (ffplay_pid == 0) {
-        // In child process
-        execlp("ffplay", "ffplay", RTSP_URL, "-nodisp", "-autoexit", NULL);
+        if (url == NULL) {
+            url = RTSP_URL; 
+        }    
+        execlp("ffplay", "ffplay", url, "-nodisp", "-autoexit", NULL);
         perror("Failed to launch ffplay");
-        exit(EXIT_FAILURE); // Exit child process if execlp fails
+        exit(EXIT_FAILURE); 
+          start_ffplay(url);// Exit child process if execlp fails
     } else if (ffplay_pid < 0) {
         perror("Failed to fork for ffplay");
         exit(EXIT_FAILURE);
     }
 }
 
-void check_ffplay() {
+void check_ffplay(char* url) {
     int status;
     pid_t result = waitpid(ffplay_pid, &status, WNOHANG); // Non-blocking check
-
-    if (result == ffplay_pid) { // If ffplay has exited
+    if (result == ffplay_pid) {
         printf("ffplay has stopped. Restarting...\n");
-        start_ffplay(); // Restart ffplay if it has stopped
+        start_ffplay(url);
     } else if (result == -1 && errno != ECHILD) {
         perror("waitpid error");
+              
+
     }
 }
